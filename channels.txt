@@ -1,0 +1,9 @@
+# Channels to sync
+# Format: workspace/channel (one per line)
+# Lines starting with # are ignored
+
+daylight/backend
+daylight/general
+daylight/alerts-api
+daylight/feed-app
+boundcorp/general
