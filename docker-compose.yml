@@ -1,0 +1,19 @@
+services:
+  slack-exporter:
+    build: .
+    restart: always
+    volumes:
+      # Persist database and attachments
+      - ./data:/app/data
+      - ./attachments:/app/attachments
+      # Mount secrets (read-only)
+      - ./.env.secrets:/app/.env.secrets:ro
+      # Mount channel config
+      - ./channels.txt:/app/channels.txt:ro
+    environment:
+      - TZ=UTC
+    # Low resource usage - just a WebSocket listener
+    deploy:
+      resources:
+        limits:
+          memory: 256M

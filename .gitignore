@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Data directory (SQLite databases)
+data/
+
+# Secrets
+.env.secrets
+
+# User channel config (contains workspace/channel names)
+channels.txt
+
+# Downloaded attachments
+attachments/

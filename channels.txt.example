@@ -1,0 +1,9 @@
+# Channels to sync
+# Format: workspace/channel (one per line)
+# Use workspace/* to subscribe to all channels in a workspace
+# Lines starting with # are ignored
+
+mycompany/general
+mycompany/engineering
+mycompany/random
+otherworkspace/*
