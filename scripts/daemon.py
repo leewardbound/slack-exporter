@@ -198,22 +198,24 @@ class SlackRTMClient:
                 continue
 
             try:
-                response = await self._http_client.get(url, follow_redirects=True)
-                if response.status_code == 200:
-                    dest_path.write_bytes(response.content)
+                async with self._http_client.stream("GET", url, follow_redirects=True) as response:
+                    if response.status_code == 200:
+                        with open(dest_path, "wb") as f:
+                            async for chunk in response.aiter_bytes(chunk_size=8192):
+                                f.write(chunk)
 
-                    attachment = Attachment(
-                        id=file_id,
-                        workspace=self.name,
-                        channel_id=channel_id,
-                        message_ts=message_ts,
-                        name=name,
-                        mimetype=mimetype,
-                        size=size,
-                        local_path=str(dest_path),
-                    )
-                    self.storage.upsert_attachments_batch([attachment])
-                    self.log(f"{self.name}: downloaded {name}")
+                        attachment = Attachment(
+                            id=file_id,
+                            workspace=self.name,
+                            channel_id=channel_id,
+                            message_ts=message_ts,
+                            name=name,
+                            mimetype=mimetype,
+                            size=size,
+                            local_path=str(dest_path),
+                        )
+                        self.storage.upsert_attachments_batch([attachment])
+                        self.log(f"{self.name}: downloaded {name}")
             except Exception as e:
                 self.log(f"{self.name}: failed to download {name}: {e}")
 

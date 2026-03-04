@@ -544,10 +544,11 @@ class SlackClient:
             return dest_path
 
         try:
-            response = self._client.get(file.url_private)
-            response.raise_for_status()
-
-            dest_path.write_bytes(response.content)
+            with self._client.stream("GET", file.url_private) as response:
+                response.raise_for_status()
+                with open(dest_path, "wb") as f:
+                    for chunk in response.iter_bytes(chunk_size=8192):
+                        f.write(chunk)
             return dest_path
         except Exception:
             return None
