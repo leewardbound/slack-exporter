@@ -260,21 +260,25 @@ class SlackRTMClient:
             self.log(f"{self.name}: error: {event}")
 
     async def connect(self):
-        """Connect to RTM WebSocket and process events."""
+        """Connect to RTM WebSocket and process events.
+
+        Connects RTM first for real-time messages, then runs catchup
+        in the background to fill historical gaps.
+        """
         self.running = True
         retry_delay = 1
 
         while self.running:
             try:
-                # Catch up on any messages missed while offline
-                await self.catchup()
-
                 ws_url = await self._get_ws_url()
                 self.log(f"{self.name}: connecting to RTM...")
 
                 async with websockets.connect(ws_url, additional_headers=self._get_headers()) as ws:
                     self.ws = ws
                     retry_delay = 1  # Reset on successful connect
+
+                    # Run catchup in background while RTM is live
+                    catchup_task = asyncio.create_task(self.catchup())
 
                     async for raw_message in ws:
                         if not self.running:
@@ -284,6 +288,14 @@ class SlackRTMClient:
                             await self.handle_event(event)
                         except json.JSONDecodeError:
                             self.log(f"{self.name}: invalid JSON: {raw_message[:100]}")
+
+                    # Clean up catchup if still running when WS closes
+                    if not catchup_task.done():
+                        catchup_task.cancel()
+                        try:
+                            await catchup_task
+                        except asyncio.CancelledError:
+                            pass
 
             except websockets.ConnectionClosed as e:
                 self.log(f"{self.name}: connection closed: {e}")
