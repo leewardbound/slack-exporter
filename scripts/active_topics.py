@@ -25,7 +25,7 @@ from slack_exporter.storage import Storage
 def get_active_threads(storage: Storage, hours: int = 24, workspace: str = None):
     """Find threads with messages in the last N hours."""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-    cutoff_ts = str(cutoff.timestamp())
+    cutoff_ts = cutoff.isoformat()
 
     with storage._connect() as conn:
         if workspace:
@@ -115,10 +115,10 @@ def format_message(msg: dict, indent: str = "  ") -> str:
     """Format a message for display."""
     ts = msg["timestamp"]
     try:
-        dt = datetime.fromtimestamp(float(ts), tz=timezone.utc)
-        time_str = dt.strftime("%m-%d %H:%M")
-    except:
-        time_str = ts[:10]
+        dt = datetime.fromisoformat(ts)
+        time_str = dt.strftime("%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        time_str = ts[:16]
 
     author = msg["real_name"] or msg["username"] or msg["user_id"] or "unknown"
     text = msg["text"].replace("\n", " ")
