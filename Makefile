@@ -1,4 +1,4 @@
-.PHONY: daemon up down restart logs-daemon sync incremental full status logs recent rate-limits install-skill
+.PHONY: daemon up down restart logs-daemon sync incremental full status logs recent rate-limits install-skill install-bin
 
 # Default: start daemon
 daemon: up
@@ -78,6 +78,12 @@ install-skill:
 	@mkdir -p ~/.claude/skills
 	@ln -sfn $(CURDIR)/skills/slack-history ~/.claude/skills/slack-history
 	@echo "Installed slack-history skill -> ~/.claude/skills/slack-history"
+
+# Install slack-history-db CLI shim (symlinks to ~/.config/bin/)
+install-bin:
+	@mkdir -p ~/.config/bin
+	@ln -sfn $(CURDIR)/bin/slack-history-db ~/.config/bin/slack-history-db
+	@echo "Installed slack-history-db -> ~/.config/bin/slack-history-db"
 
 # Show rate limit stats (last 24h)
 rate-limits:

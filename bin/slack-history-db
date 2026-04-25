@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT="$(readlink -f "$0")"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT")")"
+DB_PATH="$PROJECT_ROOT/data/slack.db"
+
+usage() {
+    cat <<EOF
+Usage: slack-history-db <command> [args...]
+
+Commands:
+  sql [args...]                    sqlite3 against data/slack.db (no args = REPL)
+                                   examples:
+                                     slack-history-db sql
+                                     slack-history-db sql "SELECT COUNT(*) FROM messages"
+                                     slack-history-db sql < query.sql
+  thread <ts> [-w WS] [--json]     Full thread for a message timestamp
+  topics [-w WS] [--hours N] [--json] [--limit N]
+                                   Active threads with first 5 + last 20 msgs
+  recent [-w WS] [--hours N] [-n N]
+                                   Recent conversations per channel
+  sync                             Run incremental sync (what cron runs)
+  status                           Sync status / message counts
+  help                             Show this message
+
+Database: $DB_PATH
+Project:  $PROJECT_ROOT
+EOF
+}
+
+cmd="${1:-help}"
+[[ $# -gt 0 ]] && shift
+
+cd "$PROJECT_ROOT"
+
+case "$cmd" in
+    sql)
+        exec sqlite3 "$DB_PATH" "$@"
+        ;;
+    thread)
+        exec uv run python scripts/thread.py "$@"
+        ;;
+    topics)
+        exec uv run python scripts/active_topics.py "$@"
+        ;;
+    recent)
+        exec uv run python scripts/recent.py "$@"
+        ;;
+    sync)
+        exec uv run python scripts/incremental.py "$@"
+        ;;
+    status)
+        exec make status
+        ;;
+    help|--help|-h)
+        usage
+        ;;
+    *)
+        echo "slack-history-db: unknown command: $cmd" >&2
+        echo >&2
+        usage >&2
+        exit 2
+        ;;
+esac

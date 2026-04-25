@@ -7,6 +7,24 @@ description: Query local Slack message archive from SQLite database. Use when us
 
 Query the local Slack archive stored in SQLite. Messages sync via cron or daemon.
 
+## CLI Wrapper
+
+Prefer the `slack-history-db` shim — it wraps every helper script + raw SQL and works from any directory.
+
+```bash
+slack-history-db                       # help
+slack-history-db sql                   # sqlite3 REPL
+slack-history-db sql "SELECT ..."      # one-shot query
+slack-history-db sql < query.sql       # query from file
+slack-history-db thread <ts> [-w WS] [--json]
+slack-history-db topics [-w WS] [--hours N] [--json] [--limit N]
+slack-history-db recent [-w WS] [--hours N] [-n N]
+slack-history-db sync                  # incremental sync
+slack-history-db status                # message counts + daemon status
+```
+
+Install with `make install-bin` (symlinks to `~/.config/bin/`). If the shim isn't on PATH, fall back to the `uv run python scripts/...` invocations shown below.
+
 ## Database Location
 
 The database is at `data/slack.db` relative to the slack-exporter project root. Find it with:
@@ -51,9 +69,9 @@ attachments(id TEXT, workspace TEXT, channel_id TEXT, message_ts TEXT,
 
 ### Quick thread lookup (recommended)
 ```bash
-uv run python scripts/thread.py 1736000000.123456
-uv run python scripts/thread.py 1736000000.123456 -w myworkspace
-uv run python scripts/thread.py 1736000000.123456 --json
+slack-history-db thread 1736000000.123456
+slack-history-db thread 1736000000.123456 -w myworkspace
+slack-history-db thread 1736000000.123456 --json
 ```
 
 ### Get full thread for a message
@@ -152,10 +170,10 @@ ORDER BY member_count DESC;
 Shows threads with recent activity, including first 5 messages (context) and last 20 messages (recent).
 
 ```bash
-uv run python scripts/active_topics.py
-uv run python scripts/active_topics.py -w myworkspace
-uv run python scripts/active_topics.py --hours 48
-uv run python scripts/active_topics.py --json
+slack-history-db topics
+slack-history-db topics -w myworkspace
+slack-history-db topics --hours 48
+slack-history-db topics --json
 ```
 
 ## Quick Overview of Active Conversations
@@ -163,22 +181,22 @@ uv run python scripts/active_topics.py --json
 For a simpler view (just recent messages per channel, not thread-grouped):
 
 ```bash
-uv run python scripts/recent.py
-uv run python scripts/recent.py -w myworkspace
-uv run python scripts/recent.py --hours 48 --messages 10
+slack-history-db recent
+slack-history-db recent -w myworkspace
+slack-history-db recent --hours 48 -n 10
 ```
 
 ## Triggering a Refresh
 
 ```bash
 # Quick incremental sync
-uv run python scripts/incremental.py
+slack-history-db sync
 
-# Full 90-day resync
+# Full 90-day resync (no shim wrapper - use Make/uv directly)
 uv run python scripts/sync.py
 
 # Check status
-make status
+slack-history-db status
 ```
 
 ## Notes
